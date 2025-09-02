@@ -1,4 +1,3 @@
-// /tailwind.config.ts
 import type { Config } from "tailwindcss";
 
 const config: Config = {
@@ -9,7 +8,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      // The fontFamily section has been completely removed to prevent conflicts.
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

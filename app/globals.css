@@ -1,4 +1,21 @@
 /* /app/globals.css */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400; /* Regular weight */
+  font-display: swap;
+  src: url('/fonts/Inter-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700; /* Bold weight */
+  font-display: swap;
+  src: url('/fonts/Inter-Bold.ttf') format('truetype');
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -21,22 +38,19 @@
     --glow-stop-4: #e62c6d;
     --glow-stop-5: #b25aff;
   }
+}
 
+@layer base {
   * { @apply border-border; }
-  
   body {
     @apply bg-background text-foreground;
-    /* This is the crucial fix: A direct CSS rule to force the font */
-    font-family: 'Inter', sans-serif !important;
   }
-
   select, select option {
     @apply text-foreground bg-input;
   }
 }
 
 @layer components {
-  /* ... your .glow-card styles remain the same ... */
   .glow-card { @apply relative; }
   .glow-card::before {
     content: '';
