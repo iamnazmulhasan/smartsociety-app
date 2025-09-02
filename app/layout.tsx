@@ -1,8 +1,7 @@
-// /app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "SmartSociety",
   description: "Integrated Community & Facilities Management Platform",
 };
@@ -15,12 +14,31 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* These link tags will reliably load the Inter font from Google's CDN */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap"
+          rel="stylesheet"
+        />
+        {/*
+          This is the corrected tag. It uses a standard <style> tag
+          which works perfectly on the server and fixes the build error.
+        */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              body {
+                font-family: 'Inter', sans-serif;
+              }
+            `,
+          }}
+        />
       </head>
-      <body className="font-sans">
+      <body>
         <main className="flex flex-col items-center justify-center min-h-screen p-4">
           {children}
         </main>
