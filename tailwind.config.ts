@@ -1,3 +1,4 @@
+// /tailwind.config.ts
 import type { Config } from "tailwindcss";
 
 const config: Config = {
@@ -8,6 +9,7 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // The fontFamily section has been completely removed.
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -39,6 +41,21 @@ const config: Config = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      keyframes: {
+        'glow-enter-blur': {
+          '0%': { opacity: '0', filter: 'blur(1px)' },
+          '25%': { opacity: '0.7', filter: 'blur(30px)' },
+          '100%': { opacity: '0.5', filter: 'blur(60px)' },
+        },
+        'glow-enter-stroke': {
+          '0%': { 'background-position': '0% 0%' },
+          '100%': { 'background-position': '100% 100%' },
+        },
+      },
+      animation: {
+        'glow-blur': 'glow-enter-blur 1s ease 0.5s forwards',
+        'glow-stroke': 'glow-enter-stroke 0.5s ease 0.5s forwards',
       },
     },
   },

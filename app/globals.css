@@ -1,31 +1,74 @@
+/* /app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    --background: 240 4% 12%;
+    --foreground: 210 20% 98%;
+    --card: 240 6% 9%;
+    --primary: 221 83% 76%;
+    --primary-foreground: 224 71% 4%;
+    --muted-foreground: 215 20% 65%;
+    --border: 215 28% 27%;
+    --input: 224 71% 10%;
+    --ring: 221 83% 76%;
+    --radius: 0.875rem;
+    --glow-stop-1: #ffc400;
+    --glow-stop-2: #ff9100;
+    --glow-stop-3: #f8682f;
+    --glow-stop-4: #e62c6d;
+    --glow-stop-5: #b25aff;
   }
 
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
+  
   body {
     @apply bg-background text-foreground;
+    /* This is the crucial fix: A direct CSS rule to force the font */
+    font-family: 'Inter', sans-serif !important;
   }
+
+  select, select option {
+    @apply text-foreground bg-input;
+  }
+}
+
+@layer components {
+  /* ... your .glow-card styles remain the same ... */
+  .glow-card { @apply relative; }
+  .glow-card::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    z-index: 0;
+    border-radius: calc(var(--radius) + 5px);
+    background: linear-gradient(135deg, var(--glow-stop-1) 0%, var(--glow-stop-2) 25%, var(--glow-stop-3) 50%, var(--glow-stop-4) 75%, var(--glow-stop-5) 100%);
+    animation: glow-enter-blur 1s ease .5s forwards;
+    opacity: 0;
+  }
+  .glow-card::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    z-index: 0;
+    border-radius: calc(var(--radius) + 2px);
+    background: linear-gradient(135deg, transparent 0%, transparent 34%, transparent 49%, #fff 57%, #fff 64%, var(--glow-stop-1) 66%, var(--glow-stop-2) 75%, var(--glow-stop-3) 83%, var(--glow-stop-4) 92%, var(--glow-stop-5) 100%);
+    background-size: 300% 300%;
+    background-position: 0% 0%;
+    animation: glow-enter-stroke 0.5s ease 0.5s forwards;
+    opacity: 0.5;
+  }
+}
+
+@keyframes glow-enter-blur {
+  0% { opacity: 0; filter: blur(1px); }
+  25% { opacity: 0.7; filter: blur(30px); }
+  to { opacity: 0.5; filter: blur(60px); }
+}
+
+@keyframes glow-enter-stroke {
+  from { background-position: 0% 0%; }
+  to { background-position: 100% 100%; }
 }

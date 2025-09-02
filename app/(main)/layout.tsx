@@ -1,6 +1,13 @@
 // /app/layout.tsx
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
+
+// Configure Inter for the entire app
+const inter = Inter({
+  subsets: ["latin"],
+  variable: '--font-inter', // Use a CSS variable
+});
 
 export const metadata: Metadata = {
   title: "SmartSociety",
@@ -14,13 +21,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
-      </head>
-      {/* The `font-sans` class is now removed */}
-      <body>
+      {/* Apply the font variable to the html tag for global scope */}
+      <body className={`${inter.variable} font-sans`}>
         <main className="flex flex-col items-center justify-center min-h-screen p-4">
           {children}
         </main>
