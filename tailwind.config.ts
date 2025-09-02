@@ -9,7 +9,11 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      // The fontFamily section has been completely removed.
+      fontFamily: {
+        // This tells Tailwind that 'font-sans' should mean the 'Inter' font.
+        sans: ['Inter', 'sans-serif'],
+      },
+      // The rest of your theme config remains the same
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
