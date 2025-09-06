@@ -1,34 +1,18 @@
 /* /app/globals.css */
-
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 400; /* Regular weight */
-  font-display: swap;
-  src: url('/fonts/Inter-Regular.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 700; /* Bold weight */
-  font-display: swap;
-  src: url('/fonts/Inter-Bold.ttf') format('truetype');
-}
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 240 4% 12%;
+    /* Updated color palette based on Bloom */
+    --background: 240 3% 6%; /* #0e0e0c */
     --foreground: 210 20% 98%;
-    --card: 240 6% 9%;
+    --card: 240 3% 6%; /* Card is same as background for seamless look */
     --primary: 221 83% 76%;
     --primary-foreground: 224 71% 4%;
     --muted-foreground: 215 20% 65%;
-    --border: 215 28% 27%;
+    --border: 240 4% 11%; /* #1c1c1c */
     --input: 224 71% 10%;
     --ring: 221 83% 76%;
     --radius: 0.875rem;
@@ -41,7 +25,9 @@
 }
 
 @layer base {
-  * { @apply border-border; }
+  * {
+    @apply border-border;
+  }
   body {
     @apply bg-background text-foreground;
   }
@@ -50,8 +36,11 @@
   }
 }
 
+/* Glow card styles remain for login/register pages */
 @layer components {
-  .glow-card { @apply relative; }
+  .glow-card {
+    @apply relative;
+  }
   .glow-card::before {
     content: '';
     position: absolute;
@@ -77,12 +66,25 @@
 }
 
 @keyframes glow-enter-blur {
-  0% { opacity: 0; filter: blur(1px); }
-  25% { opacity: 0.7; filter: blur(30px); }
-  to { opacity: 0.5; filter: blur(60px); }
+  0% {
+    opacity: 0;
+    filter: blur(1px);
+  }
+  25% {
+    opacity: 0.7;
+    filter: blur(30px);
+  }
+  to {
+    opacity: 0.5;
+    filter: blur(60px);
+  }
 }
 
 @keyframes glow-enter-stroke {
-  from { background-position: 0% 0%; }
-  to { background-position: 100% 100%; }
+  from {
+    background-position: 0% 0%;
+  }
+  to {
+    background-position: 100% 100%;
+  }
 }

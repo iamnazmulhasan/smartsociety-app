@@ -1,10 +1,15 @@
 // /app/(main)/layout.tsx
-// This is a nested layout and must be minimal.
+import Header from "@/components/Header";
 
 export default function MainLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <div className="w-full min-h-screen">
+      <Header />
+      <div className="pt-24">{children}</div>
+    </div>
+  );
 }

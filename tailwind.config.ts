@@ -1,3 +1,4 @@
+// tailwind.config.ts
 import type { Config } from "tailwindcss";
 
 const config: Config = {
@@ -37,6 +38,9 @@ const config: Config = {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        'sky-blue': '#4c98f0',
+        'bloom-pink': '#ff6b81',
+        'pinkish-blue': '#8a9cff',
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -53,10 +57,24 @@ const config: Config = {
           '0%': { 'background-position': '0% 0%' },
           '100%': { 'background-position': '100% 100%' },
         },
+        'fade-in-up': {
+          '0%': {
+            opacity: '0',
+            transform: 'translateY(20px)',
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'translateY(0)',
+          },
+        },
       },
       animation: {
         'glow-blur': 'glow-enter-blur 1s ease 0.5s forwards',
-        'glow-stroke': 'glow-enter-stroke 0.5s ease 0.5s forwards',
+        'glow-stroke': 'glow-enter-stroke 1.5s ease-in-out 0.5s forwards',
+        'fade-in-up-1': 'fade-in-up 0.5s ease-out 0.2s forwards',
+        'fade-in-up-2': 'fade-in-up 0.5s ease-out 0.4s forwards',
+        'fade-in-up-3': 'fade-in-up 0.5s ease-out 0.6s forwards',
+        'fade-in-up-4': 'fade-in-up 0.5s ease-out 0.8s forwards',
       },
     },
   },

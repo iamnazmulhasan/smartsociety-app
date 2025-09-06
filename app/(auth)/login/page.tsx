@@ -29,11 +29,11 @@ export default function LoginPage() {
 
   return (
     <div className="glow-card w-full max-w-md">
-      <div className="relative z-10 p-8 space-y-6 bg-[hsl(var(--card))] rounded-2xl shadow-2xl text-center">
+      <div className="relative z-10 p-8 space-y-3 bg-card rounded-2xl shadow-2xl text-center">
         <h1 className="text-4xl font-bold text-gray-100">
           SmartSociety
         </h1>
-        <p className="text-muted-foreground mt-2">Login to your Account</p>
+        <p className="text-foreground pb-2">Login to your Account</p>
         <form onSubmit={handleLogin} className="space-y-6 text-left">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -44,14 +44,14 @@ export default function LoginPage() {
             <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
-          <Button type="submit" className="w-full bg-[#a8c7fa] hover:bg-[#c4d7f7] text-black font-bold">
+          <Button type="submit" className="w-full bg-pinkish-blue hover:bg-pinkish-blue/90 text-white font-bold">
             Login
           </Button>
         </form>
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link href="/register" className="font-medium text-blue-400 hover:underline">
+        <div className="text-center pt-2">
+          <p className="text-sm text-foreground">
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="font-semibold text-white hover:bg-bloom-pink/90 bg-bloom-pink rounded-md px-3 py-1.5 text-sm">
               Register
             </Link>
           </p>
