@@ -1,4 +1,3 @@
-// /app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
 import "inter-ui/inter.css";
@@ -19,9 +18,8 @@ export default function RootLayout({
         <link rel="icon" href="https://bloomapp.club/AppIcon.png" type="image/png" />
       </head>
       <body>
-        <main className="flex flex-col items-center justify-center min-h-screen p-4">
-          {children}
-        </main>
+        {/* The main tag should be simple, without extra styling */}
+        <main>{children}</main>
       </body>
     </html>
   );
