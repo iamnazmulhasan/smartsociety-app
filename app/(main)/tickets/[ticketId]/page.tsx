@@ -1,7 +1,8 @@
+// /app/(main)/tickets/[ticketId]/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
-import { doc, onSnapshot, Timestamp, updateDoc, collection, addDoc, serverTimestamp, deleteDoc, writeBatch } from "firebase/firestore";
+import { doc, onSnapshot, Timestamp, updateDoc, collection, serverTimestamp, runTransaction } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,11 +13,22 @@ import { ArrowLeft, User, Phone, X, CreditCard, Play, Check, Ban } from "lucide-
 import CommentSection from "@/components/dashboards/CommentSection";
 import StaffActionPanel from "@/components/dashboards/StaffActionPanel";
 import OfferList from "@/components/dashboards/OfferList";
+import { acceptResolution, denyResolution } from "@/lib/actions/ticketActions";
 
 interface TicketDetails {
-  id: string; residentId: string; residentName: string; serviceCategory: string; serviceType: string; description: string; urgency: string;
+  id: string;
+  residentId: string; 
+  residentName: string;
+  serviceCategory: string;
+  serviceType: string;
+  description: string;
+  urgency: string;
   status: 'Pending' | 'Awaiting Resident' | 'Assigned' | 'In Progress' | 'Pending Approval' | 'Resolved' | 'Cancelled';
-  createdAt: Timestamp; assignedToName?: string; assignedToId?: string; assignedToPhone?: string; finalPrice?: number;
+  createdAt: Timestamp;
+  assignedToName?: string;
+  assignedToId?: string;
+  assignedToPhone?: string;
+  finalPrice?: number;
   resolutionNotificationId?: string; 
 }
 
@@ -26,6 +38,7 @@ export default function TicketDetailPage({ params }: { params: { ticketId: strin
   const { ticketId } = params;
   const [ticket, setTicket] = useState<TicketDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (!ticketId) return;
@@ -54,86 +67,64 @@ export default function TicketDetailPage({ params }: { params: { ticketId: strin
 
   const handleMarkAsResolved = async () => {
     if (!ticket || !userProfile) return;
-    const ticketRef = doc(firestore, 'tickets', ticketId);
-    const notifRef = doc(collection(firestore, "notifications"));
+    try {
+        await runTransaction(firestore, async (transaction) => {
+            const ticketRef = doc(firestore, 'tickets', ticketId);
+            const notifRef = doc(collection(firestore, "notifications"));
 
-    // Using a batch write to perform multiple operations at once
-    const batch = writeBatch(firestore);
-    batch.update(ticketRef, { status: 'Pending Approval', resolutionNotificationId: notifRef.id });
-    
-    const notifBody = `Service Type: ${ticket.serviceType}\nAssigned to: ${ticket.assignedToName}\nPhone no: ${ticket.assignedToPhone}\nCost: ${ticket.finalPrice} Taka\nThe staff has set this ticket as resolved. Please review and take action.`;
-    batch.set(notifRef, {
-        userId: ticket.residentId,
-        title: `Action Required: Ticket "${ticket.serviceCategory}"`,
-        body: notifBody,
-        isRead: false,
-        createdAt: serverTimestamp(),
-        link: `/tickets/${ticket.id}`,
-        type: 'action_required_resolution',
-        context: {
-            ticketId: ticket.id,
-        }
-    });
-    await batch.commit();
+            transaction.update(ticketRef, { status: 'Pending Approval', resolutionNotificationId: notifRef.id });
+            
+            const notifBody = `The staff has set this ticket as resolved. Please review and take action.`;
+            transaction.set(notifRef, {
+                userId: ticket.residentId,
+                title: `Action Required: Ticket "${ticket.serviceCategory}"`,
+                body: notifBody,
+                isRead: false,
+                createdAt: serverTimestamp(),
+                type: 'ticket-approval',
+                isActionable: true,
+                context: {
+                    ticketId: ticket.id,
+                    residentId: ticket.residentId, // <<< THE FIX IS HERE
+                    serviceCategory: ticket.serviceCategory,
+                    serviceType: ticket.serviceType,
+                    assignedToName: ticket.assignedToName,
+                    assignedToId: ticket.assignedToId,
+                    assignedToPhone: ticket.assignedToPhone,
+                    finalPrice: ticket.finalPrice,
+                }
+            });
+        });
+        alert("Approval request sent to the resident.");
+    } catch (error) {
+        console.error("Failed to send approval request:", error);
+        alert("Could not send approval request. Please try again.");
+    }
   };
 
   const handleDenyResolution = async () => {
     if (!ticket) return;
-    const ticketRef = doc(firestore, 'tickets', ticketId);
-    await updateDoc(ticketRef, { status: 'In Progress' });
-    if (ticket.resolutionNotificationId) {
-        const notifRef = doc(firestore, 'notifications', ticket.resolutionNotificationId);
-        await deleteDoc(notifRef);
+    setIsProcessing(true);
+    try {
+        await denyResolution(ticket);
+    } catch (e: any) {
+        alert(`Failed to deny: ${e.message}`);
+    } finally {
+        setIsProcessing(false);
     }
   };
 
-  // This function now securely creates a payment request for an admin
   const handleAcceptResolution = async () => {
-    if (!ticket || !userProfile || !ticket.finalPrice || !ticket.assignedToId) return;
-
-    const siteCharge = ticket.finalPrice * 0.05;
-    const totalCost = ticket.finalPrice + siteCharge;
-
-    if (userProfile.balance < totalCost) {
-        alert("Insufficient balance to complete this transaction.");
-        return;
-    }
-
+    if (!ticket || !userProfile) return;
+    setIsProcessing(true);
     try {
-        const batch = writeBatch(firestore);
-        const ticketRef = doc(firestore, 'tickets', ticketId);
-        batch.update(ticketRef, { status: 'Resolved' });
-
-        const transRef = doc(collection(firestore, "transactions"));
-        batch.set(transRef, {
-            type: 'ticket-payment',
-            status: 'Pending',
-            createdAt: serverTimestamp(),
-            residentId: ticket.residentId,
-            residentName: ticket.residentName,
-            staffId: ticket.assignedToId,
-            staffName: ticket.assignedToName,
-            ticketId: ticket.id,
-            serviceCategory: ticket.serviceCategory,
-            finalPrice: ticket.finalPrice,
-            siteCharge: siteCharge,
-            totalCost: totalCost
-        });
-
-        if (ticket.resolutionNotificationId) {
-            const notifRef = doc(firestore, 'notifications', ticket.resolutionNotificationId);
-            const finalNotifBody = `Cost: ${ticket.finalPrice} Taka\nSite Charge: ${siteCharge.toFixed(2)} Taka\nTotal Cost: ${totalCost.toFixed(2)} Taka`;
-            batch.update(notifRef, {
-                title: `Ticket Payment Pending: ${ticket.serviceCategory}`,
-                body: finalNotifBody,
-                type: 'receipt', // Update the notification to a permanent receipt
-                details: { issuedBy: ticket.assignedToName }
-            });
-        }
-        await batch.commit();
+        await acceptResolution(ticket, userProfile);
+        alert("Payment successful and ticket resolved!");
     } catch (e: any) {
-        console.error("Resolution failed:", e);
-        alert("Failed to accept resolution. Please try again.");
+        console.error("Resolution transaction failed:", e);
+        alert(`Failed to resolve ticket: ${e.message}`);
+    } finally {
+        setIsProcessing(false);
     }
   };
 
@@ -153,7 +144,7 @@ export default function TicketDetailPage({ params }: { params: { ticketId: strin
   const isAssignedStaff = isStaff && userProfile.uid === ticket.assignedToId;
 
   const showOfferPanel = (isResidentOwner || isStaff) && ticket.status === 'Awaiting Resident';
-  const showStaffActionPanel = isStaff && ticket.status === 'Pending';
+  const showStaffActionPanel = isStaff && !isAssignedStaff && ticket.status === 'Pending';
   const showStartWorkButton = isAssignedStaff && ticket.status === 'Assigned';
   const showMarkAsResolvedButton = isAssignedStaff && ticket.status === 'In Progress';
   const showResidentApprovalPanel = isResidentOwner && ticket.status === 'Pending Approval';
@@ -161,6 +152,7 @@ export default function TicketDetailPage({ params }: { params: { ticketId: strin
   return (
     <div className="space-y-6">
       <Button variant="ghost" onClick={() => router.back()}><ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard</Button>
+
       <Card className="bg-zinc-900 border-zinc-800">
         <CardHeader>
             <div className="flex justify-between items-start">
@@ -169,7 +161,7 @@ export default function TicketDetailPage({ params }: { params: { ticketId: strin
             </div>
         </CardHeader>
         <CardContent className="space-y-4">
-            <div><h4 className="font-semibold text-gray-300">Description</h4><p className="text-gray-400 bg-zinc-800 p-2 rounded-none">{ticket.description}</p></div>
+            <div><h4 className="font-semibold text-gray-300">Description</h4><p className="text-gray-400 bg-zinc-800 p-3 rounded-md">{ticket.description}</p></div>
             <div className="grid grid-cols-2 gap-4">
                 <div><h4 className="font-semibold text-gray-300">Service Type</h4><p className="text-gray-400">{ticket.serviceType}</p></div>
                 <div><h4 className="font-semibold text-gray-300">Urgency</h4><p className="text-gray-400">{ticket.urgency}</p></div>
@@ -184,22 +176,25 @@ export default function TicketDetailPage({ params }: { params: { ticketId: strin
                 </div>
                 </div>
             )}
+            
             {showStartWorkButton && (<div className="border-t border-zinc-700 pt-4"><Button onClick={handleStartWork} className="w-full bg-purple-600 hover:bg-purple-700"><Play className="h-4 w-4 mr-2"/> Start Work</Button></div>)}
             {showMarkAsResolvedButton && (<div className="border-t border-zinc-700 pt-4"><Button onClick={handleMarkAsResolved} className="w-full bg-teal-600 hover:bg-teal-700"><Check className="h-4 w-4 mr-2"/> Mark as Complete</Button></div>)}
+            
             {showResidentApprovalPanel && (
                 <div className="border-t border-zinc-700 pt-4 space-y-3">
                     <h4 className="font-bold text-center text-amber-400">Action Required</h4>
                     <p className="text-sm text-center text-gray-400">The assigned staff has marked this service as complete. Please confirm the work has been finished to your satisfaction.</p>
                     <div className="flex gap-4">
-                        <Button onClick={handleDenyResolution} className="w-full bg-red-600 hover:bg-red-700"><Ban className="h-4 w-4 mr-2"/> Deny</Button>
-                        <Button onClick={handleAcceptResolution} className="w-full bg-green-600 hover:bg-green-700"><Check className="h-4 w-4 mr-2"/> Accept & Finalize</Button>
+                        <Button onClick={handleDenyResolution} disabled={isProcessing} className="w-full bg-red-600 hover:bg-red-700"><Ban className="h-4 w-4 mr-2"/> Deny</Button>
+                        <Button onClick={handleAcceptResolution} disabled={isProcessing} className="w-full bg-green-600 hover:bg-green-700"><Check className="h-4 w-4 mr-2"/> Accept & Pay</Button>
                     </div>
                 </div>
             )}
         </CardContent>
       </Card>
+      
       {showOfferPanel && <OfferList ticketId={ticket.id} residentName={ticket.residentName} />}
-      {showStaffActionPanel && <StaffActionPanel ticketId={ticket.id} staffProfile={userProfile} />}
+      {showStaffActionPanel && !isAssignedStaff && <StaffActionPanel ticketId={ticket.id} staffProfile={userProfile} />}
       <CommentSection ticketId={ticket.id} />
     </div>
   );
