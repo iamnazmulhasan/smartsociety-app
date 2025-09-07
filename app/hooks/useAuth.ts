@@ -1,8 +1,9 @@
+// /app/hooks/useAuth.ts
 "use client";
 
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore'; // Import onSnapshot instead of getDoc
+import { doc, onSnapshot, Timestamp } from 'firebase/firestore'; // <<< 1. Import Timestamp
 import { auth, firestore } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 
@@ -13,6 +14,7 @@ export interface UserProfile {
   role: string;
   phoneNumber: string;
   balance: number;
+  createdAt: Timestamp; // <<< 2. Add the createdAt property
   imageUrl?: string;
   address?: {
     houseNo: string;
@@ -56,8 +58,7 @@ export function useAuth() {
 
   useEffect(() => {
     if (user) {
-      // --- THIS IS THE CRITICAL FIX ---
-      // This new listener subscribes to real-time changes on the user's document
+      // This listener subscribes to real-time changes on the user's document
       const docRef = doc(firestore, "users", user.uid);
       const unsubscribeProfile = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {

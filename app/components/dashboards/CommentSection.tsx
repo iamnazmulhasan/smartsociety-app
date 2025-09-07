@@ -1,6 +1,8 @@
+// /app/components/dashboards/CommentSection.tsx
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from 'next/link'; // <<< 1. Import Link
 import { collection, query, onSnapshot, addDoc, serverTimestamp, orderBy, Timestamp } from "firebase/firestore";
 import { firestore } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +13,7 @@ interface Comment {
   id: string;
   text: string;
   authorName: string;
+  authorId: string; // <<< 2. Add authorId to the interface
   createdAt: Timestamp;
 }
 
@@ -63,21 +66,34 @@ export default function CommentSection({ ticketId }: CommentSectionProps) {
   return (
     <Card className="bg-zinc-900 border-zinc-800">
       <CardHeader>
-        {/* Changed title from "Conversation" to "Comments" */}
         <CardTitle>Comments</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-4 max-h-96 overflow-y-auto">
+        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
           {comments.length > 0 ? (
             comments.map((comment) => (
               <div key={comment.id} className="bg-zinc-800 p-3 rounded-lg">
                 <div className="flex justify-between items-center mb-1">
-                  <p className="font-semibold text-white text-sm">{comment.authorName}</p>
+                  
+                  {/* --- 3. THE CHANGE IS HERE --- */}
+                  {/* If an authorId exists, wrap the name in a Link */}
+                  {comment.authorId ? (
+                    <Link href={`/profile/${comment.authorId}`}>
+                      <p className="font-semibold text-white text-sm hover:underline cursor-pointer">
+                        {comment.authorName}
+                      </p>
+                    </Link>
+                  ) : (
+                    <p className="font-semibold text-white text-sm">
+                      {comment.authorName}
+                    </p>
+                  )}
+                  
                   <p className="text-xs text-gray-500">
                     {comment.createdAt ? new Date(comment.createdAt.seconds * 1000).toLocaleString() : 'Just now'}
                   </p>
                 </div>
-                <p className="text-gray-300 text-sm">{comment.text}</p>
+                <p className="text-gray-300 text-sm whitespace-pre-wrap">{comment.text}</p>
               </div>
             ))
           ) : (
