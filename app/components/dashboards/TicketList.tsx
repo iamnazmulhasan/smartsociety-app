@@ -8,31 +8,28 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-// ADD 'In Progress' to the status list
+// This interface now includes the 'Pending Approval' status
 export interface Ticket {
   id: string;
   serviceCategory: string;
-  status: 'Pending' | 'Awaiting Resident' | 'Assigned' | 'In Progress' | 'Resolved' | 'Cancelled';
+  status: 'Pending' | 'Awaiting Resident' | 'Assigned' | 'In Progress' | 'Pending Approval' | 'Resolved' | 'Cancelled';
   urgency: 'Low' | 'Medium' | 'High' | 'Emergency';
   createdAt: Timestamp;
 }
 
-// Update the color helper to include the new status
+// The color helper is also updated with the new status
 const getStatusColor = (status: Ticket['status']) => {
   switch (status) {
     case 'Pending': return 'bg-yellow-500';
     case 'Awaiting Resident': return 'bg-orange-500';
     case 'Assigned': return 'bg-blue-500';
-    case 'In Progress': return 'bg-purple-500'; // Added new color
+    case 'In Progress': return 'bg-purple-500';
+    case 'Pending Approval': return 'bg-teal-500'; // Added new color for the new status
     case 'Resolved': return 'bg-green-500';
     case 'Cancelled': return 'bg-red-500';
     default: return 'bg-gray-500';
   }
 };
-
-// ... (The rest of the file remains the same) ...
-// The existing TicketList component will be reused for assigned tickets.
-// No more changes are needed in this file below this point.
 
 export default function TicketList() {
   const { userProfile } = useAuth();

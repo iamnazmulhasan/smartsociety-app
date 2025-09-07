@@ -11,11 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { districts, upazilas } from "@/lib/data/bd-divisions";
 
-// Define service categories for maintenance staff
 const serviceCategories = [
   "Plumbing", "Electrical", "AC Service", "Gas Line Service", 
   "Carpentry", "Painting", "Pest Control", "Appliance Repair", "Internet/Cable Issue"
 ];
+const paymentMethodOptions = ["Nagad", "bKash"];
+const ADMIN_SECRET_CODE = "1337";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -25,16 +26,18 @@ export default function RegisterPage() {
   const [role, setRole] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  // State for resident-specific fields
+  // Resident fields
   const [postOffice, setPostOffice] = useState("");
   const [houseNo, setHouseNo] = useState("");
-
-  // State for maintenance-specific fields
+  // Staff fields
   const [serviceCategory, setServiceCategory] = useState("");
   const [experience, setExperience] = useState("");
   const [nid, setNid] = useState("");
+  // Admin fields
+  const [secretCode, setSecretCode] = useState("");
+  const [paymentMethods, setPaymentMethods] = useState<{ [key: string]: boolean }>({});
 
-  // Shared state for location
+  // Shared location fields
   const [district, setDistrict] = useState("");
   const [upazila, setUpazila] = useState("");
   const [availableUpazilas, setAvailableUpazilas] = useState<string[]>([]);
@@ -50,24 +53,36 @@ export default function RegisterPage() {
     }
   }, [district]);
 
+  const handlePaymentMethodChange = (method: string) => {
+    setPaymentMethods(prev => ({ ...prev, [method]: !prev[method] }));
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Basic validation for all roles
     if (!fullName || !phoneNumber || !email || !password || !role) {
       setError("Please fill in all general fields.");
       return;
     }
     
-    // Role-specific validation
     if (role === 'Resident' && (!district || !upazila || !postOffice || !houseNo)) {
-      setError("Please fill in all address details for resident registration.");
+      setError("Please fill in all address details.");
       return;
     }
     if (role === 'Maintenance Staff' && (!serviceCategory || !district || !upazila || !experience || !nid)) {
-      setError("Please fill in all professional details for staff registration.");
+      setError("Please fill in all professional details.");
       return;
+    }
+    if (role === 'Administrator') {
+      if (secretCode !== ADMIN_SECRET_CODE) {
+        setError("The secret invite code is incorrect.");
+        return;
+      }
+      if (Object.values(paymentMethods).every(v => !v)) {
+        setError("Please select at least one payment method.");
+        return;
+      }
     }
 
     try {
@@ -80,30 +95,26 @@ export default function RegisterPage() {
         email: user.email,
         phoneNumber,
         role,
+        balance: 0,
         createdAt: new Date(),
       };
 
-      // Add role-specific data to the user document
       if (role === 'Resident') {
         userData.address = { district, upazila, postOffice, houseNo };
       } else if (role === 'Maintenance Staff') {
         userData.serviceCategory = serviceCategory;
-        userData.experience = parseInt(experience, 10); // Store as a number
+        userData.experience = parseInt(experience, 10);
         userData.nid = nid;
-        userData.location = { district, upazila }; // Store location separately
+        userData.location = { district, upazila };
+      } else if (role === 'Administrator') {
+        userData.paymentMethods = paymentMethods;
       }
 
       await setDoc(doc(firestore, "users", user.uid), userData);
       router.push("/dashboard");
     } catch (error: any) {
-      if (error.code === 'auth/email-already-in-use') {
-        setError("This email address is already in use.");
-      } else if (error.code === 'auth/weak-password') {
-        setError("Password should be at least 6 characters.");
-      } else {
-        setError("Failed to create an account. Please try again.");
-        console.error("Registration error:", error);
-      }
+      setError("Failed to create an account. Please try again.");
+      console.error(error);
     }
   };
   
@@ -118,7 +129,6 @@ export default function RegisterPage() {
           <p className="text-sm text-[hsl(215_20%_65%)] -mt-6">Create an Account</p>
           <hr className="border-white" />
           <form onSubmit={handleRegister} className="space-y-4 text-left">
-            {/* --- General Fields --- */}
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name</Label>
               <Input id="fullName" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} required className={inputStyles} />
@@ -144,8 +154,6 @@ export default function RegisterPage() {
                 <option value="Administrator">Administrator</option>
               </select>
             </div>
-
-            {/* --- Conditional Fields for RESIDENT --- */}
             {role === 'Resident' && (
               <>
                 <div className="space-y-2">
@@ -172,8 +180,6 @@ export default function RegisterPage() {
                 </div>
               </>
             )}
-            
-            {/* --- Conditional Fields for MAINTENANCE STAFF --- */}
             {role === 'Maintenance Staff' && (
                <>
                 <div className="space-y-2">
@@ -205,13 +211,37 @@ export default function RegisterPage() {
                   <Label htmlFor="nid">NID Number</Label>
                   <Input id="nid" type="text" value={nid} onChange={(e) => setNid(e.target.value)} required className={inputStyles} placeholder="Enter your National ID number"/>
                 </div>
+               </>
+            )}
+            {role === 'Administrator' && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="secretCode">Secret Invite Code</Label>
+                  <Input id="secretCode" type="password" value={secretCode} onChange={(e) => setSecretCode(e.target.value)} required className={inputStyles} placeholder="Enter the admin invite code"/>
+                </div>
+                <div className="space-y-2">
+                  <Label>Payment Methods</Label>
+                  <div className="flex gap-4 items-center pt-2">
+                    {paymentMethodOptions.map((method) => (
+                      <div key={method} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={method}
+                          checked={!!paymentMethods[method]}
+                          onChange={() => handlePaymentMethodChange(method)}
+                          className="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+                        />
+                        <Label htmlFor={method} className="text-white">{method}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </>
             )}
-
             {error && <p className="text-red-400 text-sm pt-2">{error}</p>}
             <Button type="submit" className="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold pt-2">Create Account</Button>
           </form>
-          <div className="text-center">
+          <div className="text-center pt-4">
             <p className="text-sm text-[hsl(215_20%_65%)]">
               Already have an account?{" "}
               <Link href="/login" className="font-medium bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 no-underline">Login</Link>
@@ -220,7 +250,6 @@ export default function RegisterPage() {
         </div>
       </div>
       <style jsx global>{`
-        /* Glow styles remain the same */
         @keyframes glow-enter-blur {
           0% { opacity: 0; filter: blur(1px); }
           25% { opacity: 0.7; filter: blur(30px); }
@@ -230,7 +259,9 @@ export default function RegisterPage() {
           from { background-position: 0% 0%; }
           to { background-position: 100% 100%; }
         }
-        .register-glow-card { position: relative; }
+        .register-glow-card { 
+          position: relative; 
+        }
         .register-glow-card::before {
           content: ''; position: absolute; inset: -5px; z-index: 0;
           border-radius: calc(0.875rem + 5px);
@@ -245,7 +276,8 @@ export default function RegisterPage() {
           animation: glow-enter-stroke 0.5s ease 0.5s forwards; opacity: 0.5;
         }
         .custom-select option {
-          background-color: #27272a; color: white;
+          background-color: #27272a; 
+          color: white;
         }
       `}</style>
     </>

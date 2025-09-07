@@ -18,7 +18,7 @@ export default function RootLayout({
         <link rel="icon" href="https://bloomapp.club/AppIcon.png" type="image/png" />
       </head>
       <body>
-        {/* The main tag should be simple, without extra styling */}
+        {/* The main tag is now simple and does not force content to the center */}
         <main>{children}</main>
       </body>
     </html>

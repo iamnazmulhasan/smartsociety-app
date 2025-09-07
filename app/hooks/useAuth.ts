@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore'; // Import onSnapshot instead of getDoc
 import { auth, firestore } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 
@@ -12,6 +12,7 @@ export interface UserProfile {
   email: string;
   role: string;
   phoneNumber: string;
+  balance: number;
   imageUrl?: string;
   address?: {
     houseNo: string;
@@ -19,7 +20,6 @@ export interface UserProfile {
     upazila: string;
     district: string;
   };
-  // Add these new optional fields for Maintenance Staff
   serviceCategory?: string;
   location?: {
     district: string;
@@ -27,7 +27,9 @@ export interface UserProfile {
   };
   experience?: number;
   nid?: string;
-  // Properties for Maintenance Staff rating
+  paymentMethods?: {
+    [key: string]: boolean;
+  };
   ratingCount?: number;
   totalStars?: number;
 }
@@ -39,24 +41,36 @@ export function useAuth() {
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUser(user);
-        const docRef = doc(firestore, "users", user.uid);
-        const docSnap = await getDoc(docRef);
+    // This listener handles user login/logout
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      if (!user) {
+        // If user logs out, clear profile and stop loading
+        setUserProfile(null);
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      // --- THIS IS THE CRITICAL FIX ---
+      // This new listener subscribes to real-time changes on the user's document
+      const docRef = doc(firestore, "users", user.uid);
+      const unsubscribeProfile = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
           setUserProfile(docSnap.data() as UserProfile);
         } else {
           setUserProfile(null);
         }
-      } else {
-        setUser(null);
-        setUserProfile(null);
-      }
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [router]);
+        setLoading(false);
+      });
+
+      return () => unsubscribeProfile(); // Cleanup the profile listener on unmount
+    }
+  }, [user]); // This effect runs whenever the user object changes
 
   return { user, userProfile, loading };
 }
